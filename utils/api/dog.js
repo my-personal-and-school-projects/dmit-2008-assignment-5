@@ -1,4 +1,4 @@
-import { BASE_URL } from './base';
+import { BASE_URL } from "./base";
 
 const getRandomDog = async () => {
   const response = await fetch(`${BASE_URL}/api/breeds/image/random`);
