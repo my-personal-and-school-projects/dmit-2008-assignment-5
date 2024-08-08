@@ -1,34 +1,44 @@
 import "@testing-library/jest-dom";
 import { render, screen, act, waitFor } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
+import { setupServer } from "msw/node";
 import Home from "../pages/index.js";
 import { getRandomDog } from "../utils/api/dog.js";
+import { BASE_URL } from "../utils/api/base.js";
 
 const TEST_URL = "https://example.com/test-dog.jpg";
 const NEW_TEST_URL = "https://example.com/new-test-dog.jpg";
 
-/* mock the location of the getRandomDog otherwise it will give an error: 
-{getRandomDog} "cannot reassign to an imported binding" */
-jest.mock("../utils/api/dog.js");
+const RANDOM_DOG_URL = `${BASE_URL}/api/breeds/image/random`;
+const NEW_RANDOM_DOG_URL = `${BASE_URL}/api/breeds/image/random`;
 
-//TODO: does it need to be async?
-/* beforeAll(async () => {
-  await new Promise((resolve) => {
-    getRandomDog
-      .mockResolvedValue({ status: "success", message: TEST_URL })
-      .mockName("mockGetRandomDog");
-    resolve();
-  });
-}); */
+const handlers = [
+  http.get(RANDOM_DOG_URL, () => {
+    return HttpResponse.json({
+      status: "success",
+      message: TEST_URL,
+      status: "success",
+      message: NEW_TEST_URL,
+    });
+  }),
+];
+
+//setup the server so that it begins to listen beforeAll of the tests and closes afterAll of the tests are done.
+const server = setupServer(...handlers);
 
 beforeAll(() => {
-  getRandomDog
-    .mockResolvedValue({ status: "success", message: TEST_URL })
-    .mockResolvedValue({ status: "success", message: NEW_TEST_URL })
-    .mockName("mockGetRandomDog");
+  server.listen();
 });
 
-beforeEach(() => {
-  jest.clearAllMocks();
+afterEach(() => {
+  // Reset the request handlers between each test.
+  // This way the handlers we add on a per-test basis
+  // do not leak to other, irrelevant tests.
+  server.resetHandlers();
+});
+
+afterAll(() => {
+  server.close();
 });
 
 //Write a test that checks to see if the title is rendered correctly
